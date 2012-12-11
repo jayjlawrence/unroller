@@ -4,20 +4,24 @@ GIT
   specs:
     ruby-termios (0.9.6)
 
+PATH
+  remote: .
+  specs:
+    unroller (1.0.1)
+      colored
+      facets (= 2.5.0)
+      quality_extensions (= 1.1.2)
+
 GEM
   remote: http://rubygems.org/
   specs:
     colored (1.2)
     facets (2.5.0)
     quality_extensions (1.1.2)
-    rake (10.0.2)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
-  colored
-  facets (= 2.5.0)
-  quality_extensions (= 1.1.2)
-  rake
   ruby-termios!
+  unroller!
