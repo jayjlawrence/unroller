@@ -19,7 +19,6 @@ Gem::Specification.new do |s|
   s.homepage = "http://#{Project::Name}.rubyforge.org"
   s.rubyforge_project = Project::Name
   s.platform = Gem::Platform::RUBY
-  s.add_dependency("quality_extensions", '1.1.2')
   s.add_dependency("colored")
   #s.add_dependency("arika-ruby-termios")
 

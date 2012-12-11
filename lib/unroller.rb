@@ -1,17 +1,3 @@
-require 'quality_extensions/object/send_if_not_nil'
-require 'quality_extensions/kernel/trap_chain'
-require 'quality_extensions/kernel/capture_output'
-require 'quality_extensions/string/with_knowledge_of_color'
-require 'quality_extensions/exception/inspect_with_backtrace'
-require 'quality_extensions/regexp/join'
-require 'quality_extensions/symbol/match'
-require 'quality_extensions/module/alias_method_chain'
-require 'quality_extensions/module/malias_method_chain'
-require 'quality_extensions/module/attribute_accessors'
-require 'quality_extensions/enumerable/select_until'
-require 'quality_extensions/module/bool_attr_accessor'
-require 'quality_extensions/object/pp_s'
-
 require 'colored'
 
 require 'English'
@@ -55,10 +41,55 @@ rescue Gem::LoadError
   $termios_loaded = false
 end
 
+# Helpers
 def returning(obj=self)
   yield obj
   obj
 end
+
+class Object
+  def send_if_not_nil(message, *args)
+    if message
+      send(message, *args) 
+    else
+      self
+    end
+  end
+end
+
+module Color
+  Color_regexp = /\e\[[^m]+m/
+
+  def strip_color(string)
+    string.gsub(Color_regexp, '')
+  end
+
+  # This version of +length+ takes into account the fact that the ANSI color codes themselves don't take up any space to display on the screen.
+  # So this returns the number of characters wide the string is when it is actually printed to the screen.
+  def length_without_color(string)
+    strip_color(string).length
+  end
+
+  def nonprinting_characters_used_for_color(string)
+    string.scan(Color_regexp).join
+  end
+
+  def ljust_with_color(string, width, padstr=' ')
+    #ljust(width + nonprinting_characters_used_for_color.length, padstr)
+    # That didn't work when you wanted the padstr to have color (as in ' '.on_blue)
+
+    padding_width = [(width - length_without_color(string)), 0].max
+    string + padstr*padding_width
+  end
+
+  def rjust_with_color(string, width, padstr=' ')
+    padding_width = [(width - length_without_color(string)), 0].max
+    padstr*padding_width + string
+  end
+end
+include Color
+
+
 
 class IO
   # Gets a single character, as a string.
@@ -142,7 +173,6 @@ class Unroller
   # AKA stack frame?
 
   class ClassExclusion
-    bool_attr_reader :recursive
     attr_reader :regexp
     def initialize(klass, *flags)
       raise ArgumentError if !(Module === klass || String === klass || Symbol === klass || Regexp === klass)
@@ -152,6 +182,10 @@ class Unroller
           klass :
           /^#{klass.to_s}$/    # (Or should we escape it?)
       @recursive = true if flags.include?(:recursive)
+    end
+
+    def recursive?
+      @recursive ? true : @recursive
     end
   end
 
@@ -181,7 +215,25 @@ class Unroller
   attr_accessor :depth
   attr_reader   :tracing
 
-  mattr_accessor :display_style
+  unless defined? @@display_style
+    @@display_style = nil
+  end
+  
+  def self.display_style
+    @@display_style
+  end
+
+  def display_style
+    @@display_style
+  end
+
+  def self.display_style=(obj)
+    @@display_style = obj
+  end
+
+  def display_style=(obj)
+    @@display_style = obj
+  end
 
   def initialize(options = {})
     # Defaults
@@ -361,22 +413,16 @@ class Unroller
 
       if @condition.call
 
-        trap_chain("INT") do
+        previous_interrupt_handler = trap('INT') {}
+        trap('INT') do
           puts
           puts 'Exiting trace...'
           set_trace_func(nil)
           @@quiting = true
           throw :quit
+          previous_interrupt_handler.call unless previous_interrupt_handler == "DEFAULT"
         end
-
-
-
-
-
-
-
-
-
+            
         # (This is the meat of the library right here, so let's set it off with at least 5 blank lines.)
         set_trace_func( lambda do |event, file, line, id, binding, klass|
           return if @@quiting
@@ -807,11 +853,11 @@ protected
   end
   # The same thing, only just using whitespace.
   def plain_indent(indent_adjustment = 0)
-    (' '*@indent_step.length_without_color) * [(@depth + indent_adjustment), 0].max
+    (' '*length_without_color(@indent_step)) * [(@depth + indent_adjustment), 0].max
   end
 
   def remaining_width
-    @screen_width - @output_line.length_without_color
+    @screen_width - length_without_color(@output_line)
   end
 
   # +width+ is the minimum width for this column. It's also a maximum if +column_overflow+ is :chop_left or :chop_right
@@ -826,7 +872,7 @@ protected
 
     if @column_counter == 0
       @output_line << indent
-      width -= indent.length_without_color if width
+      width -= length_without_color(indent) if width
     else
       @output_line << @column_separator      # So the columns won't be squashed up against each other
     end
@@ -842,7 +888,7 @@ protected
         string = string.make_it_fit(max_for_screen)
       end
 
-      string = string.ljust_with_color(width)    # Handles minimum width
+      string = ljust_with_color(string, width)    # Handles minimum width
     end
 
     @output_line << string.send_if_not_nil(color)
@@ -851,7 +897,7 @@ protected
   end # def column
 
   def newline
-    unless @output_line.strip.length_without_color == 0 or @output_line == @last_line_printed
+    unless length_without_color(@output_line.strip) == 0 or @output_line == @last_line_printed
       Kernel.print @output_line
       Kernel.puts
       @last_line_printed = @output_line
@@ -994,7 +1040,7 @@ end # class Unroller
 class String
     def make_it_fit(max_width, overflow = :chop_right)
       returning(string = self) do
-        if string.length_without_color > max_width      # Wider than desired column width; Needs to be chopped.
+        if length_without_color(string) > max_width      # Wider than desired column width; Needs to be chopped.
           unless max_width < 4                          # Is there even enough room for it if it *is* chopped? If not, then don't even bother.
             #Kernel.p overflow
             if overflow == :chop_left
