@@ -996,9 +996,8 @@ protected
       lines_containing_method =
         (line_num .. [code_for_file.size - 1, line_num+30].min).
         map {|i| [i, code_for_file[i]]}.
-        map do |item|
-          item
-          break if line =~ /^#{leading_whitespace}end/
+        select do |line|
+          line !~ /^#{leading_whitespace}end/
         end
 
       common_indentation = lines_containing_method.map { |i, line|
