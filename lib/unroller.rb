@@ -1,16 +1,3 @@
-#require 'rubygems'
-#gem 'facets'
-require 'facets'
-require 'facets/methodspace'
-require 'facets/kernel/populate'
-require 'facets/kernel/returning'
-#require 'facets/kernel/singleton_class'
-#require 'facets/symbol/to_proc'
-#require 'facets/string/bracket'
-#require 'facets/string/index_all'
-#require 'facets/hash/reverse_merge'
-
-#gem 'quality_extensions'
 require 'quality_extensions/object/send_if_not_nil'
 require 'quality_extensions/kernel/trap_chain'
 require 'quality_extensions/kernel/capture_output'
@@ -25,10 +12,7 @@ require 'quality_extensions/enumerable/select_until'
 require 'quality_extensions/module/bool_attr_accessor'
 require 'quality_extensions/object/pp_s'
 
-#gem 'colored'
 require 'colored'
-#gem 'extensions'
-#require 'extensions/object'
 
 require 'English'
 require 'pp'
@@ -69,6 +53,11 @@ begin
   $termios_loaded = true
 rescue Gem::LoadError
   $termios_loaded = false
+end
+
+def returning(obj=self)
+  yield obj
+  obj
 end
 
 class IO
@@ -132,7 +121,7 @@ class Unroller
       ret = @variables.map do |variable|
         name, value = *variable
         "#{name} = #{value.inspect}"
-      end.join('; ').bracket('   (', ')')
+      end.join('; ').tap { |s| s.replace("   (#{s})") }
       ret[0..70] + '...'  # Maybe truncating it could be optional in the future, but for now it's just too cluttered
     end
     def verbose_to_s
@@ -319,7 +308,9 @@ class Unroller
       @exclude_methods.concat a
     end
     options[:line_matches]       = options.delete(:line_matches)       if options.has_key?(:line_matches)
-    populate(options)
+    options.each do |k,v|
+      send("#{k}=", v) if respond_to?("#{k}=")
+    end
 
     #-----------------------------------------------------------------------------------------------
     # Private
@@ -846,9 +837,9 @@ protected
       max_for_screen = remaining_width
       if column_overflow =~ /chop_/   # The column only *has* a max with if column_overflow is chop_ (not if it's allow, obviously)
         #puts "width = #{width}"
-        string = string.code_unroller.make_it_fit(max_for_column, column_overflow)
+        string = string.make_it_fit(max_for_column, column_overflow)
       else
-        string = string.code_unroller.make_it_fit(max_for_screen)
+        string = string.make_it_fit(max_for_screen)
       end
 
       string = string.ljust_with_color(width)    # Handles minimum width
@@ -1001,8 +992,6 @@ end # class Unroller
 
 
 class String
-  method_space :code_unroller do
-
     def make_it_fit(max_width, overflow = :chop_right)
       returning(string = self) do
         if string.length_without_color > max_width      # Wider than desired column width; Needs to be chopped.
@@ -1023,7 +1012,6 @@ class String
           end
         end
       end
-    end
 
   end
 end # class String
