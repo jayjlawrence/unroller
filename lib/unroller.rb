@@ -996,9 +996,10 @@ protected
       lines_containing_method =
         (line_num .. [code_for_file.size - 1, line_num+30].min).
         map {|i| [i, code_for_file[i]]}.
-        select_until(inclusive = true) do |line_num, line|
-          line =~ /^#{leading_whitespace}end/
-      end
+        map do |item|
+          item
+          break if line =~ /^#{leading_whitespace}end/
+        end
 
       common_indentation = lines_containing_method.map { |i, line|
         line =~ /^((  )*)/; $1 ? $1.size : 0
