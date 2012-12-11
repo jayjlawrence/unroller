@@ -123,8 +123,8 @@ class Unroller
   class Variables
     def initialize(which, binding)
       @variables = eval("#{which}_variables", binding).map { |variable|
-        value = eval(variable, binding)
-        [variable, value]
+        value = eval(variable.to_s, binding)
+        [variable.to_s, value]
       }
     end
     def to_s
