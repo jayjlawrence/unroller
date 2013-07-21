@@ -71,6 +71,8 @@ Screenshot[link:include/screenshot_interactive.png]
 
 (The above shows <tt>:display_style => :show_entire_method_body</tt>.)
 
+===JRuby Notes
+
 ===Interactive debugger
 
 Currently there are two basic modes: non-interactive trace mode and interactive debugger mode. To enable the latter, just call <tt>Unroller::debug</tt>, kind of like this:
