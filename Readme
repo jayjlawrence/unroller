@@ -71,7 +71,9 @@ Screenshot[link:include/screenshot_interactive.png]
 
 (The above shows <tt>:display_style => :show_entire_method_body</tt>.)
 
-===JRuby Notes
+===JRuby + Rails Notes
+
+Removal of Termios dependency
 
 ===Interactive debugger
 
